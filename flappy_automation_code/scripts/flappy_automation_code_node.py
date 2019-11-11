@@ -47,13 +47,10 @@ def bind_laserscan_to_info_getter(info_getter):
 
 
 def automate(info_getter):
-    old_ranges = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
     idx = 0
     ranges_q = Queue.Queue(maxsize=5)
 
     while True:
-        five_congruous = (idx % 5 == 0)
-
         if info_getter.current_vel is not None and info_getter.current_laserscan is not None:
             current_vel = info_getter.current_vel
             current_ranges = info_getter.current_laserscan.ranges
@@ -88,31 +85,39 @@ def automate(info_getter):
             #
             # if go_forward:
             #     accelerate(0.3, 0.)
-            #
-            # if upper_mean_greater(current_ranges) and not go_forward:
-            #     accelerate(-3., 0.02)
-            #
-            # elif not upper_mean_greater(current_ranges) and not go_forward:
-            #     accelerate(-3., -0.02)
+
+            if idx >= 5:
+                ranges_q.get()
+                ranges_q.put(current_ranges)
+            else:
+                ranges_q.put(current_ranges)
+
+            if idx >= 5:
+                forward_laser_sequence = [list(ranges_q.queue)[time_step][4] for time_step in range(5)]
+                print(forward_laser_sequence)
+
+                go_forward = len(set(forward_laser_sequence)) <= 1 and current_ranges[4] >= 3.5
+
+                print(go_forward)
+
+                if go_forward:
+                    accelerate(1.5, 0.)
+
+                if upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
+                    accelerate(-3., 0.02)
+
+                elif not upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
+                    accelerate(-3., -0.02)
 
             # if current_vel.x >= 0.5:
             #     accelerate(-0.3, 0.)
 
-            if idx >= 5:
-                ranges_q.get()
-                ranges_q.put(idx)
-            else:
-                ranges_q.put(idx)
-
-            print(list(ranges_q.queue))
-
-            # if five_congruous:
-            #     old_ranges = current_ranges
-            #     ranges_diff = compute_ranges_diff(current_ranges, old_ranges)
-            #     if np.any(ranges_diff):
-            #         print(ranges_diff)
+            # ranges_diff = compute_ranges_diff(current_ranges, list(ranges_q.queue)[0])
+            # if np.any(ranges_diff):
+            #     print(ranges_diff)
 
             idx += 1
+
 
 def upper_mean_greater(ranges):
     if ranges[0] + ranges[1] + ranges[2] + ranges[3] < ranges[5] + ranges[6] + ranges[7] + ranges[8]:
