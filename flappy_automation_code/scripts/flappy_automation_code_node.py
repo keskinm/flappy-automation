@@ -50,7 +50,7 @@ def bind_laserscan_to_info_getter(info_getter):
 def automate(info_getter):
     idx = 0
     ranges_q = Queue.Queue(maxsize=5)
-    vels_q = Queue.Queue(maxsize=300)
+    vels_q = Queue.Queue(maxsize=500000)
 
     while True:
         if info_getter.current_vel is not None and info_getter.current_laserscan is not None:
@@ -66,7 +66,7 @@ def automate(info_getter):
             else:
                 ranges_q.put(current_ranges)
 
-            if idx >= 300:
+            if idx >= 500000:
                 vels_q.get()
                 vels_q.put(current_vel)
             else:
@@ -77,10 +77,9 @@ def automate(info_getter):
                 upper_laser_sequence = [list(ranges_q.queue)[time_step][5] for time_step in range(5)]
                 lower_laser_sequence = [list(ranges_q.queue)[time_step][3] for time_step in range(5)]
 
-                if idx >= 300:
-                    x_vels_sequence = [list(ranges_q.queue)[time_step][3] for time_step in range(5)]
+                if idx >= 500000:
+                    x_vels_sequence = [list(vels_q.queue)[time_step].x for time_step in range(300)]
                     start_stuck_handler(x_vels_sequence)
-
                 hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
                 emergency_horizontal_decelerate(current_ranges)
                 stabilize_wrt_means(current_ranges)
@@ -97,9 +96,9 @@ def start_stuck_handler(x_vels_sequence):
         print("STUCK HANDLER")
 
         if random.random() < 0.5:
-            accelerate(-3., 2.)
+            accelerate(-3., 0.04)
         else:
-            accelerate(-3., -2.)
+            accelerate(-3., 0.04)
 
 
 def caution_decelerate(current_vel):
