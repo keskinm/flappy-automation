@@ -54,7 +54,6 @@ def automate(info_getter):
         if info_getter.current_vel is not None and info_getter.current_laserscan is not None:
             current_vel = info_getter.current_vel
             current_ranges = info_getter.current_laserscan.ranges
-            current_min_angles = info_getter.current_laserscan.angle_min
             current_time = info_getter.current_laserscan.header.stamp
 
             # if current_ranges[3] < 1. or current_ranges[6] < 1.:
@@ -77,10 +76,6 @@ def automate(info_getter):
             # print(upper_mean_greater(current_ranges))
             # print(current_ranges[4])
 
-            # print("angle_min:", info_getter.current_laserscan.angle_min)
-            # print("angle_max", info_getter.current_laserscan.angle_max)
-            # print("angle_increment", info_getter.current_laserscan.angle_increment)
-
             # go_forward = (current_ranges[4] >= 3.5)
             #
             # if go_forward:
@@ -101,13 +96,13 @@ def automate(info_getter):
                 print(go_forward)
 
                 if go_forward:
-                    accelerate(1.5, 0.)
+                    accelerate(1., 0.)
 
                 if upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
-                    accelerate(-3., 0.02)
+                    accelerate(-3., 0.04)
 
                 elif not upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
-                    accelerate(-3., -0.02)
+                    accelerate(-3., -0.04)
 
             # if current_vel.x >= 0.5:
             #     accelerate(-0.3, 0.)
