@@ -89,11 +89,10 @@ def automate(info_getter):
 
             if idx >= 5:
                 forward_laser_sequence = [list(ranges_q.queue)[time_step][4] for time_step in range(5)]
-                print(forward_laser_sequence)
 
-                go_forward = len(set(forward_laser_sequence)) <= 1 and current_ranges[4] >= 3.5
+                go_forward = len(set(forward_laser_sequence)) <= 1 and current_ranges[4] >= 3.1 and not(current_ranges[3] < 0.1 or current_ranges[5] < 0.1)
 
-                print(go_forward)
+                print(current_ranges[3:6])
 
                 if go_forward:
                     accelerate(1., 0.)
