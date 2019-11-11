@@ -4,7 +4,7 @@ import numpy as np
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Vector3
 import time
-import threading
+import Queue
 
 # Publisher for sending acceleration commands to flappy bird
 pub_acc_cmd = rospy.Publisher('/flappy_acc', Vector3, queue_size=1)
@@ -49,6 +49,7 @@ def bind_laserscan_to_info_getter(info_getter):
 def automate(info_getter):
     old_ranges = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
     idx = 0
+    ranges_q = Queue.Queue(maxsize=5)
 
     while True:
         five_congruous = (idx % 5 == 0)
@@ -83,19 +84,27 @@ def automate(info_getter):
             # print("angle_max", info_getter.current_laserscan.angle_max)
             # print("angle_increment", info_getter.current_laserscan.angle_increment)
 
-            go_forward = (current_ranges[4] >= 3.5)
-
-            if go_forward:
-                accelerate(0.3, 0.)
-
-            if upper_mean_greater(current_ranges) and not go_forward:
-                accelerate(-3., 0.02)
-
-            elif not upper_mean_greater(current_ranges) and not go_forward:
-                accelerate(-3., -0.02)
+            # go_forward = (current_ranges[4] >= 3.5)
+            #
+            # if go_forward:
+            #     accelerate(0.3, 0.)
+            #
+            # if upper_mean_greater(current_ranges) and not go_forward:
+            #     accelerate(-3., 0.02)
+            #
+            # elif not upper_mean_greater(current_ranges) and not go_forward:
+            #     accelerate(-3., -0.02)
 
             # if current_vel.x >= 0.5:
             #     accelerate(-0.3, 0.)
+
+            if idx >= 5:
+                ranges_q.get()
+                ranges_q.put(idx)
+            else:
+                ranges_q.put(idx)
+
+            print(list(ranges_q.queue))
 
             # if five_congruous:
             #     old_ranges = current_ranges
@@ -103,6 +112,7 @@ def automate(info_getter):
             #     if np.any(ranges_diff):
             #         print(ranges_diff)
 
+            idx += 1
 
 def upper_mean_greater(ranges):
     if ranges[0] + ranges[1] + ranges[2] + ranges[3] < ranges[5] + ranges[6] + ranges[7] + ranges[8]:
