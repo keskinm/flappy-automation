@@ -69,15 +69,26 @@ def automate(info_getter):
             #         accelerate(-3., 0.)
             #         accelerate(-3., -0.1)
 
-            if current_vel.x == 0 and current_vel.y == 0:
-                indice = np.argmax(current_ranges)
-                if indice > 4:
-                    accelerate(0., -0.1)
-                elif indice < 4:
-                    accelerate(0., 0.1)
+            # if current_vel.x == 0 and current_vel.y == 0:
+            #     indice = np.argmax(current_ranges)
+            #     if indice > 4:
+            #         accelerate(0., -0.1)
+            #     elif indice < 4:
+            #         accelerate(0., 0.1)
 
-            if current_ranges[4] >= 3.5:
-                accelerate(0.1, 0.)
+            # print(upper_mean_greater(current_ranges))
+            print(current_ranges[4])
+
+            go_forward = (current_ranges[4] >= 3.5)
+
+            if go_forward:
+                accelerate(0.3, 0.)
+
+            if upper_mean_greater(current_ranges) and not go_forward:
+                accelerate(-3., 0.01)
+
+            elif not upper_mean_greater(current_ranges) and not go_forward:
+                accelerate(-3., -0.01)
 
             if current_vel.x >= 0.5:
                 accelerate(-0.3, 0.)
@@ -87,6 +98,12 @@ def automate(info_getter):
             #     ranges_diff = compute_ranges_diff(current_ranges, old_ranges)
             #     if np.any(ranges_diff):
             #         print(ranges_diff)
+
+
+def upper_mean_greater(ranges):
+    if ranges[0] + ranges[1] + ranges[2] + ranges[3] < ranges[5] + ranges[6] + ranges[7] + ranges[8]:
+        return True
+    return False
 
 
 def compute_ranges_diff(ranges_t_1, ranges_t):
