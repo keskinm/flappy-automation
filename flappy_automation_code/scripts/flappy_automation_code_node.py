@@ -81,6 +81,8 @@ def automate(info_getter):
             # if go_forward:
             #     accelerate(0.3, 0.)
 
+            print(current_ranges[3:6])
+
             if idx >= 5:
                 ranges_q.get()
                 ranges_q.put(current_ranges)
@@ -89,28 +91,53 @@ def automate(info_getter):
 
             if idx >= 5:
                 forward_laser_sequence = [list(ranges_q.queue)[time_step][4] for time_step in range(5)]
+                upper_laser_sequence = [list(ranges_q.queue)[time_step][5] for time_step in range(5)]
+                lower_laser_sequence = [list(ranges_q.queue)[time_step][3] for time_step in range(5)]
 
-                go_forward = len(set(forward_laser_sequence)) <= 1 and current_ranges[4] >= 3.1 and not(current_ranges[3] < 0.1 or current_ranges[5] < 0.1)
+                hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
+                emergency_horizontal_stabilize(current_ranges)
+                stabilize_wrt_means(current_ranges)
+                emergency_vertical_stabilize(current_ranges)
 
-                print(current_ranges[3:6])
+                go_forward = len(set(forward_laser_sequence)) <= 1 and current_ranges[4] >= 3.1 and not((current_ranges[3] < 0.4 and current_ranges[2] < 0.4) or (current_ranges[5] < 0.4 and current_ranges[6] < 0.4))
 
                 if go_forward:
                     accelerate(1., 0.)
 
-                if upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
-                    accelerate(-3., 0.04)
-
-                elif not upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
-                    accelerate(-3., -0.04)
-
-            # if current_vel.x >= 0.5:
-            #     accelerate(-0.3, 0.)
+            if current_vel.x >= 0.5:
+                accelerate(-0.3, 0.)
 
             # ranges_diff = compute_ranges_diff(current_ranges, list(ranges_q.queue)[0])
             # if np.any(ranges_diff):
             #     print(ranges_diff)
 
             idx += 1
+
+
+def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
+    if upper_laser_sequence[4] < 0.1 and upper_laser_sequence[0] < 0.1:
+        accelerate(-3., 0.04)
+    elif lower_laser_sequence[4] < 0.1 and lower_laser_sequence[0] < 0.1:
+        accelerate(-3., -0.04)
+
+def emergency_vertical_stabilize(current_ranges):
+    if current_ranges[8] < 0.1:
+        accelerate(-3., -0.1)
+
+    if current_ranges[0] < 0.1:
+        accelerate(-3., 0.1)
+
+def emergency_horizontal_stabilize(current_ranges):
+    if current_ranges[3] < 0.5 and current_ranges[4] < 0.5 and current_ranges[5] <0.5:
+        accelerate(-3., 0.)
+
+
+def stabilize_wrt_means(current_ranges):
+    if upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
+        accelerate(-3., 0.04)
+
+    elif not upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
+        accelerate(-3., -0.04)
 
 
 def upper_mean_greater(ranges):
