@@ -5,6 +5,7 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Vector3
 import time
 import Queue
+import random
 
 # Publisher for sending acceleration commands to flappy bird
 pub_acc_cmd = rospy.Publisher('/flappy_acc', Vector3, queue_size=1)
@@ -49,6 +50,7 @@ def bind_laserscan_to_info_getter(info_getter):
 def automate(info_getter):
     idx = 0
     ranges_q = Queue.Queue(maxsize=5)
+    vels_q = Queue.Queue(maxsize=30)
 
     while True:
         if info_getter.current_vel is not None and info_getter.current_laserscan is not None:
@@ -64,10 +66,20 @@ def automate(info_getter):
             else:
                 ranges_q.put(current_ranges)
 
+            if idx >= 30:
+                vels_q.get()
+                vels_q.put(current_vel)
+            else:
+                vels_q.put(current_vel)
+
             if idx >= 5:
                 forward_laser_sequence = [list(ranges_q.queue)[time_step][4] for time_step in range(5)]
                 upper_laser_sequence = [list(ranges_q.queue)[time_step][5] for time_step in range(5)]
                 lower_laser_sequence = [list(ranges_q.queue)[time_step][3] for time_step in range(5)]
+
+                if idx >= 30:
+                    x_vels_sequence = [list(ranges_q.queue)[time_step][3] for time_step in range(5)]
+                    start_stuck_handler(x_vels_sequence)
 
                 hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
                 emergency_horizontal_decelerate(current_ranges)
@@ -77,6 +89,14 @@ def automate(info_getter):
                 caution_decelerate(current_vel)
 
             idx += 1
+
+
+def start_stuck_handler(x_vels_sequence):
+    if not np.any(x_vels_sequence):
+        if random.random() < 0.5:
+            accelerate(-3., 2.)
+        else:
+            accelerate(-3., -2.)
 
 
 def caution_decelerate(current_vel):
