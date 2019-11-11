@@ -50,7 +50,7 @@ def bind_laserscan_to_info_getter(info_getter):
 def automate(info_getter):
     idx = 0
     ranges_q = Queue.Queue(maxsize=5)
-    vels_q = Queue.Queue(maxsize=30)
+    vels_q = Queue.Queue(maxsize=300)
 
     while True:
         if info_getter.current_vel is not None and info_getter.current_laserscan is not None:
@@ -58,7 +58,7 @@ def automate(info_getter):
             current_ranges = info_getter.current_laserscan.ranges
             current_time = info_getter.current_laserscan.header.stamp
 
-            print(current_ranges)
+            # print(current_ranges)
 
             if idx >= 5:
                 ranges_q.get()
@@ -66,7 +66,7 @@ def automate(info_getter):
             else:
                 ranges_q.put(current_ranges)
 
-            if idx >= 30:
+            if idx >= 300:
                 vels_q.get()
                 vels_q.put(current_vel)
             else:
@@ -77,7 +77,7 @@ def automate(info_getter):
                 upper_laser_sequence = [list(ranges_q.queue)[time_step][5] for time_step in range(5)]
                 lower_laser_sequence = [list(ranges_q.queue)[time_step][3] for time_step in range(5)]
 
-                if idx >= 30:
+                if idx >= 300:
                     x_vels_sequence = [list(ranges_q.queue)[time_step][3] for time_step in range(5)]
                     start_stuck_handler(x_vels_sequence)
 
@@ -93,6 +93,9 @@ def automate(info_getter):
 
 def start_stuck_handler(x_vels_sequence):
     if not np.any(x_vels_sequence):
+
+        print("STUCK HANDLER")
+
         if random.random() < 0.5:
             accelerate(-3., 2.)
         else:
@@ -101,6 +104,9 @@ def start_stuck_handler(x_vels_sequence):
 
 def caution_decelerate(current_vel):
     if current_vel.x >= 0.5:
+
+        print("CAUTION DECELERATE")
+
         accelerate(-0.3, 0.)
 
 
@@ -109,35 +115,54 @@ def go_forward(current_ranges, forward_laser_sequence):
                 (current_ranges[3] < 0.4 and current_ranges[2] < 0.4) or (
                     current_ranges[5] < 0.4 and current_ranges[6] < 0.4))
     if safety_conditions:
+
+        print("SAFETY CONDITIONS")
+
         accelerate(1., 0.)
 
 
 def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
     if upper_laser_sequence[4] < 0.1 and upper_laser_sequence[0] < 0.1:
         accelerate(-3., 0.04)
+
+        print("UPPER HARD CASE STABILIZE")
+
     elif lower_laser_sequence[4] < 0.1 and lower_laser_sequence[0] < 0.1:
         accelerate(-3., -0.04)
+
+        print("LOWER HARD CASE STABILIZE")
 
 
 def emergency_vertical_stabilize(current_ranges):
     if current_ranges[8] < 0.1:
+
+        print("EMERGENCY UPPER CASE STABILIZE")
+
         accelerate(-3., -0.1)
 
     if current_ranges[0] < 0.1:
+
+        print("EMERGENCY LOWER CASE STABILIZE")
+
         accelerate(-3., 0.1)
 
 
 def emergency_horizontal_decelerate(current_ranges):
     if current_ranges[3] < 0.5 and current_ranges[4] < 0.5 and current_ranges[5] <0.5:
         accelerate(-3., 0.)
+        print("EMERGENCY HORIZONTAL DECELERATE")
 
 
 def stabilize_wrt_means(current_ranges):
     if upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
         accelerate(-3., 0.04)
 
+        print("STABILIZE WRT UPPER MEAN")
+
     elif not upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
         accelerate(-3., -0.04)
+
+        print("STABILIZE WRT LOWER MEAN")
 
 
 def upper_mean_greater(ranges):
