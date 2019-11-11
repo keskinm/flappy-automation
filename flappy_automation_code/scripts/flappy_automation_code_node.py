@@ -56,32 +56,7 @@ def automate(info_getter):
             current_ranges = info_getter.current_laserscan.ranges
             current_time = info_getter.current_laserscan.header.stamp
 
-            # if current_ranges[3] < 1. or current_ranges[6] < 1.:
-            #     accelerate(-3., 0.)
-            #
-            #     if current_ranges[2] > current_ranges[5]:
-            #         accelerate(-3., 0.)
-            #         accelerate(-3., 0.1)
-            #     else:
-            #         accelerate(-3., 0.)
-            #         accelerate(-3., -0.1)
-
-            # if current_vel.x == 0 and current_vel.y == 0:
-            #     indice = np.argmax(current_ranges)
-            #     if indice > 4:
-            #         accelerate(0., -0.1)
-            #     elif indice < 4:
-            #         accelerate(0., 0.1)
-
-            # print(upper_mean_greater(current_ranges))
-            # print(current_ranges[4])
-
-            # go_forward = (current_ranges[4] >= 3.5)
-            #
-            # if go_forward:
-            #     accelerate(0.3, 0.)
-
-            print(current_ranges[3:6])
+            print(current_ranges)
 
             if idx >= 5:
                 ranges_q.get()
@@ -107,10 +82,6 @@ def automate(info_getter):
             if current_vel.x >= 0.5:
                 accelerate(-0.3, 0.)
 
-            # ranges_diff = compute_ranges_diff(current_ranges, list(ranges_q.queue)[0])
-            # if np.any(ranges_diff):
-            #     print(ranges_diff)
-
             idx += 1
 
 
@@ -120,12 +91,14 @@ def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
     elif lower_laser_sequence[4] < 0.1 and lower_laser_sequence[0] < 0.1:
         accelerate(-3., -0.04)
 
+
 def emergency_vertical_stabilize(current_ranges):
     if current_ranges[8] < 0.1:
         accelerate(-3., -0.1)
 
     if current_ranges[0] < 0.1:
         accelerate(-3., 0.1)
+
 
 def emergency_horizontal_stabilize(current_ranges):
     if current_ranges[3] < 0.5 and current_ranges[4] < 0.5 and current_ranges[5] <0.5:
