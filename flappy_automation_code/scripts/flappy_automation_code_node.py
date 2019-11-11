@@ -77,7 +77,11 @@ def automate(info_getter):
             #         accelerate(0., 0.1)
 
             # print(upper_mean_greater(current_ranges))
-            print(current_ranges[4])
+            # print(current_ranges[4])
+
+            # print("angle_min:", info_getter.current_laserscan.angle_min)
+            # print("angle_max", info_getter.current_laserscan.angle_max)
+            # print("angle_increment", info_getter.current_laserscan.angle_increment)
 
             go_forward = (current_ranges[4] >= 3.5)
 
@@ -85,13 +89,13 @@ def automate(info_getter):
                 accelerate(0.3, 0.)
 
             if upper_mean_greater(current_ranges) and not go_forward:
-                accelerate(-3., 0.01)
+                accelerate(-3., 0.02)
 
             elif not upper_mean_greater(current_ranges) and not go_forward:
-                accelerate(-3., -0.01)
+                accelerate(-3., -0.02)
 
-            if current_vel.x >= 0.5:
-                accelerate(-0.3, 0.)
+            # if current_vel.x >= 0.5:
+            #     accelerate(-0.3, 0.)
 
             # if five_congruous:
             #     old_ranges = current_ranges
