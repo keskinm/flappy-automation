@@ -79,19 +79,19 @@ def automate(info_getter):
 
                 if idx >= 500000:
                     x_vels_sequence = [list(vels_q.queue)[time_step].x for time_step in range(300)]
-                    start_stuck_handler(x_vels_sequence)
+                    start_stuck_handler(x_vels_sequence, current_ranges)
+
+                caution_decelerate(current_vel)
                 hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
                 emergency_horizontal_decelerate(current_ranges)
-                stabilize_wrt_means(current_ranges)
                 emergency_vertical_stabilize(current_ranges)
-                go_forward(current_ranges, forward_laser_sequence)
-                caution_decelerate(current_vel)
+                go_forward(current_ranges, forward_laser_sequence, idx)
 
             idx += 1
 
 
-def start_stuck_handler(x_vels_sequence):
-    if not np.any(x_vels_sequence):
+def start_stuck_handler(x_vels_sequence, current_ranges):
+    if not np.any(x_vels_sequence) and current_ranges[4] < 1.:
 
         print("STUCK HANDLER")
 
@@ -104,20 +104,25 @@ def start_stuck_handler(x_vels_sequence):
 def caution_decelerate(current_vel):
     if current_vel.x >= 0.5:
 
-        print("CAUTION DECELERATE")
+        # print("CAUTION DECELERATE")
 
         accelerate(-0.3, 0.)
 
 
-def go_forward(current_ranges, forward_laser_sequence):
-    safety_conditions = len(set(forward_laser_sequence)) <= 1 and current_ranges[4] >= 3.1 and not (
+def go_forward(current_ranges, forward_laser_sequence, idx):
+    safety_conditions = len(set(forward_laser_sequence)) <= 1 and current_ranges[4] >= 1.5 and not (
                 (current_ranges[3] < 0.4 and current_ranges[2] < 0.4) or (
                     current_ranges[5] < 0.4 and current_ranges[6] < 0.4))
     if safety_conditions:
 
-        print("SAFETY CONDITIONS")
+        # print("SAFETY CONDITIONS")
 
-        accelerate(1., 0.)
+        accelerate(0.5, 0.)
+
+    else:
+        accelerate(-3., 0.)
+        if idx % 500 == 0:
+            stabilize_wrt_means(current_ranges)
 
 
 def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
@@ -133,17 +138,17 @@ def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
 
 
 def emergency_vertical_stabilize(current_ranges):
-    if current_ranges[8] < 0.1:
+    if current_ranges[8] < 0.1 or current_ranges[7] < 0.1 or current_ranges[6] < 0.1:
 
         print("EMERGENCY UPPER CASE STABILIZE")
 
-        accelerate(-3., -0.1)
+        accelerate(-3., -0.15)
 
-    if current_ranges[0] < 0.1:
+    if current_ranges[0] < 0.1 or current_ranges[1] < 0.1 or current_ranges[2] < 0.1:
 
         print("EMERGENCY LOWER CASE STABILIZE")
 
-        accelerate(-3., 0.1)
+        accelerate(-3., 0.15)
 
 
 def emergency_horizontal_decelerate(current_ranges):
@@ -154,12 +159,12 @@ def emergency_horizontal_decelerate(current_ranges):
 
 def stabilize_wrt_means(current_ranges):
     if upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
-        accelerate(-3., 0.04)
+        accelerate(-3., 0.4)
 
         print("STABILIZE WRT UPPER MEAN")
 
     elif not upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
-        accelerate(-3., -0.04)
+        accelerate(-3., -0.4)
 
         print("STABILIZE WRT LOWER MEAN")
 
