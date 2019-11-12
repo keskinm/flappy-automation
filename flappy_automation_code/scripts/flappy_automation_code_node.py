@@ -92,8 +92,8 @@ def automate(info_getter):
                 #     time.sleep(100000)
 
                 caution_decelerate(current_vel)
-                # hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
-                # emergency_horizontal_decelerate(current_ranges)
+                hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
+                emergency_horizontal_decelerate(current_ranges)
                 emergency_vertical_stabilize(current_ranges)
                 go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time)
 
@@ -106,19 +106,13 @@ def go_through_right_direction(current_ranges, angle_min, angle_increment, idx, 
 
     print("GO THROUGH RIGHT DIRECTION")
 
-    if upper_mean_greater(current_ranges):
-        sum_x_acc = sum(math.cos((angle_min + angle_increment*(i+5)))*current_ranges[i+5] for i in range(4))/4
-        sum_y_acc = sum(math.sin((angle_min + angle_increment*(i+5)))*current_ranges[i+5] for i in range(4))/4
-    else:
-        sum_x_acc = sum(math.cos((angle_min + angle_increment*i))*current_ranges[i] for i in range(4))/4
-        sum_y_acc = sum(math.sin((angle_min + angle_increment*i))*current_ranges[i] for i in range(4))/4
-
-    sum_x_acc = sum(math.cos((angle_min + angle_increment*i))*current_ranges[i] for i in range(9))/9
-    sum_y_acc = sum(math.sin((angle_min + angle_increment * i)) * current_ranges[i] for i in range(9)) / 9
-
-    if random.random() <= 0.:
-        x = -0.1
+    fake = (upper_mean_greater(current_ranges) and right_dir_angle <=0) or (not upper_mean_greater(current_ranges) and right_dir_angle >=0)
+    if fake:
+        sum_x_acc = sum(math.cos((angle_min + angle_increment * i)) * current_ranges[i] for i in range(9)) / 9
+        sum_y_acc = (sum(math.sin((angle_min + angle_increment * i)) * current_ranges[i] for i in range(9))-math.sin(right_dir_angle)) / 8
+        x = 0.05
         y = sum_y_acc
+        print("FAKE")
 
     else:
         x = 0.05
@@ -139,14 +133,14 @@ def start_stuck_handler(x_vels_sequence, current_ranges):
 
 
 def caution_decelerate(current_vel):
-    if current_vel.x >= 0.5:
+    if current_vel.x >= 0.3:
         accelerate(-1., 0.)
 
-    if current_vel.y >= 0.2:
+    if current_vel.y >= 0.1:
         accelerate(0., -1.)
         print("CAUTIOUS Y DECCELERATE")
 
-    if current_vel.y <= -0.2:
+    if current_vel.y <= -0.1:
         accelerate(0., 1.)
         print("CAUTIOUS Y DECCELERATE")
 
@@ -154,22 +148,15 @@ def caution_decelerate(current_vel):
 def go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time):
     start = (sum(1 for i in range(9) if current_ranges[i] > 3.5) > 6)
 
-    safety_conditions = len(set(forward_laser_sequence)) <= 2 and current_ranges[4] >= 0.3 and not (
-            (current_ranges[3] < 0.2 and current_ranges[2] < 0.2) or (
-            current_ranges[5] < 0.2 and current_ranges[6] < 0.2))
-
-    if safety_conditions or start:
-        print("SAFETY CONDITIONS")
+    if start:
         accelerate(0.3, 0.)
 
     else:
-        # accelerate(-1.5, 0.)
-
-        if random.random() <= 0.7:
+        if random.random() <= 1.:
             go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time)
 
-        # else:
-        #     stabilize_wrt_means(current_ranges)
+        else:
+            stabilize_wrt_means(current_ranges)
 
 
 def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
