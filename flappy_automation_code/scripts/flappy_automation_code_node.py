@@ -6,6 +6,7 @@ from geometry_msgs.msg import Vector3
 import time
 import Queue
 import random
+import math
 
 # Publisher for sending acceleration commands to flappy bird
 pub_acc_cmd = rospy.Publisher('/flappy_acc', Vector3, queue_size=1)
@@ -57,8 +58,10 @@ def automate(info_getter):
             current_vel = info_getter.current_vel
             current_ranges = info_getter.current_laserscan.ranges
             current_time = info_getter.current_laserscan.header.stamp
+            angle_min = info_getter.current_laserscan.angle_min
+            angle_increment = info_getter.current_laserscan.angle_increment
 
-            print(current_ranges)
+            # print(current_ranges)
 
             if idx >= 5:
                 ranges_q.get()
@@ -81,15 +84,31 @@ def automate(info_getter):
 
                 if idx >= 50000:
                     x_vels_sequence = [list(vels_q.queue)[time_step].x for time_step in range(300)]
-                    start_stuck_handler(x_vels_sequence, current_ranges)
+                    # start_stuck_handler(x_vels_sequence, current_ranges)
+
+                # go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time)
+
+                # if idx >= 10:
+                #     time.sleep(100000)
 
                 caution_decelerate(current_vel)
                 hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
                 emergency_horizontal_decelerate(current_ranges)
                 emergency_vertical_stabilize(current_ranges)
-                go_forward(current_ranges, forward_laser_sequence, idx)
+                go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time)
 
             idx += 1
+
+
+def go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time):
+    biggest_laser_range_index = np.argmax(current_ranges)
+    right_dir_angle = angle_min + angle_increment*biggest_laser_range_index
+
+    print("GO THROUGH RIGHT DIRECTION")
+
+    x = math.cos(right_dir_angle)
+    y = math.sin(right_dir_angle)
+    accelerate(x, y)
 
 
 def start_stuck_handler(x_vels_sequence, current_ranges):
@@ -111,19 +130,22 @@ def caution_decelerate(current_vel):
         accelerate(-1., 0.)
 
 
-def go_forward(current_ranges, forward_laser_sequence, idx):
+def go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time):
     safety_conditions = len(set(forward_laser_sequence)) <= 3 and current_ranges[4] >= 0.1 and not (
                 (current_ranges[3] < 0.1 and current_ranges[2] < 0.1) or (
                     current_ranges[5] < 0.1 and current_ranges[6] < 0.1))
     if safety_conditions:
-
         print("SAFETY CONDITIONS")
-
         accelerate(0.3, 0.)
 
     else:
         accelerate(-3., 0.)
-        if random.random() <= 0.1:
+        if random.random() <= 0.8:
+            non_legits_count = sum(1 for i in range(9) if current_ranges[i] > 3.5)
+            if non_legits_count < 10000:
+                go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time)
+
+        elif random.random() <= 1.:
             stabilize_wrt_means(current_ranges)
 
 
@@ -144,13 +166,13 @@ def emergency_vertical_stabilize(current_ranges):
 
         print("EMERGENCY UPPER CASE STABILIZE")
 
-        accelerate(-3., -0.15)
+        accelerate(-3., -0.3)
 
     if current_ranges[0] < 0.2 or current_ranges[1] < 0.2 or current_ranges[2] < 0.2:
 
         print("EMERGENCY LOWER CASE STABILIZE")
 
-        accelerate(-3., 0.15)
+        accelerate(-3., 0.3)
 
 
 def emergency_horizontal_decelerate(current_ranges):
@@ -160,13 +182,13 @@ def emergency_horizontal_decelerate(current_ranges):
 
 
 def stabilize_wrt_means(current_ranges):
-    if upper_mean_greater(current_ranges) :
-        accelerate(-3., 0.2)
+    if upper_mean_greater(current_ranges):
+        accelerate(-3., 0.1)
 
         print("STABILIZE WRT UPPER MEAN")
 
-    elif not upper_mean_greater(current_ranges) :
-        accelerate(-3., -0.2)
+    elif not upper_mean_greater(current_ranges):
+        accelerate(-3., -0.1)
 
         print("STABILIZE WRT LOWER MEAN")
 
