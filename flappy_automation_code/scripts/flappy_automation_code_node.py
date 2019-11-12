@@ -50,7 +50,7 @@ def bind_laserscan_to_info_getter(info_getter):
 def automate(info_getter):
     idx = 0
     ranges_q = Queue.Queue(maxsize=5)
-    vels_q = Queue.Queue(maxsize=500000)
+    vels_q = Queue.Queue(maxsize=50000)
 
     while True:
         if info_getter.current_vel is not None and info_getter.current_laserscan is not None:
@@ -58,7 +58,7 @@ def automate(info_getter):
             current_ranges = info_getter.current_laserscan.ranges
             current_time = info_getter.current_laserscan.header.stamp
 
-            # print(current_ranges)
+            print(current_ranges)
 
             if idx >= 5:
                 ranges_q.get()
@@ -66,7 +66,7 @@ def automate(info_getter):
             else:
                 ranges_q.put(current_ranges)
 
-            if idx >= 500000:
+            if idx >= 50000:
                 vels_q.get()
                 vels_q.put(current_vel)
             else:
@@ -77,7 +77,9 @@ def automate(info_getter):
                 upper_laser_sequence = [list(ranges_q.queue)[time_step][5] for time_step in range(5)]
                 lower_laser_sequence = [list(ranges_q.queue)[time_step][3] for time_step in range(5)]
 
-                if idx >= 500000:
+                # print(forward_laser_sequence)
+
+                if idx >= 50000:
                     x_vels_sequence = [list(vels_q.queue)[time_step].x for time_step in range(300)]
                     start_stuck_handler(x_vels_sequence, current_ranges)
 
@@ -110,18 +112,18 @@ def caution_decelerate(current_vel):
 
 
 def go_forward(current_ranges, forward_laser_sequence, idx):
-    safety_conditions = len(set(forward_laser_sequence)) <= 1 and current_ranges[4] >= 1.5 and not (
-                (current_ranges[3] < 0.4 and current_ranges[2] < 0.4) or (
-                    current_ranges[5] < 0.4 and current_ranges[6] < 0.4))
+    safety_conditions = len(set(forward_laser_sequence)) <= 3 and current_ranges[4] >= 0.1 and not (
+                (current_ranges[3] < 0.1 and current_ranges[2] < 0.1) or (
+                    current_ranges[5] < 0.1 and current_ranges[6] < 0.1))
     if safety_conditions:
 
-        # print("SAFETY CONDITIONS")
+        print("SAFETY CONDITIONS")
 
-        accelerate(0.5, 0.)
+        accelerate(0.3, 0.)
 
     else:
         accelerate(-3., 0.)
-        if idx % 500 == 0:
+        if random.random() <= 0.1:
             stabilize_wrt_means(current_ranges)
 
 
@@ -158,13 +160,13 @@ def emergency_horizontal_decelerate(current_ranges):
 
 
 def stabilize_wrt_means(current_ranges):
-    if upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
-        accelerate(-3., 0.5)
+    if upper_mean_greater(current_ranges) :
+        accelerate(-3., 0.2)
 
         print("STABILIZE WRT UPPER MEAN")
 
-    elif not upper_mean_greater(current_ranges) and current_ranges[4] < 3.5:
-        accelerate(-3., -0.5)
+    elif not upper_mean_greater(current_ranges) :
+        accelerate(-3., -0.2)
 
         print("STABILIZE WRT LOWER MEAN")
 
