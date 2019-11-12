@@ -101,14 +101,23 @@ def automate(info_getter):
 
 
 def go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time):
-    biggest_laser_range_index = np.argmax(current_ranges)
+    if upper_mean_greater(current_ranges):
+        biggest_laser_range_index = np.argmax(current_ranges[5:])+5
+    else:
+        biggest_laser_range_index = np.argmax(current_ranges[:4])
+
     right_dir_angle = angle_min + angle_increment*biggest_laser_range_index
+
+    upper_mean_angle = sum(angle_min + angle_increment*i for i in range(5, 9))/4
+    lower_mean_angle = sum(angle_min + angle_increment*i for i in range(4))/4
 
     print("GO THROUGH RIGHT DIRECTION")
 
     x = math.cos(right_dir_angle)
     y = math.sin(right_dir_angle)
+
     accelerate(x, y)
+    accelerate(-3., 0)
 
 
 def start_stuck_handler(x_vels_sequence, current_ranges):
@@ -131,7 +140,7 @@ def caution_decelerate(current_vel):
 
 
 def go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time):
-    safety_conditions = len(set(forward_laser_sequence)) <= 3 and current_ranges[4] >= 0.1 and not (
+    safety_conditions = len(set(forward_laser_sequence)) <= 2 and current_ranges[4] >= 0.3 and not (
                 (current_ranges[3] < 0.1 and current_ranges[2] < 0.1) or (
                     current_ranges[5] < 0.1 and current_ranges[6] < 0.1))
     if safety_conditions:
@@ -140,7 +149,7 @@ def go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_inc
 
     else:
         accelerate(-3., 0.)
-        if random.random() <= 0.8:
+        if random.random() <= 1.:
             non_legits_count = sum(1 for i in range(9) if current_ranges[i] > 3.5)
             if non_legits_count < 10000:
                 go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time)
@@ -150,12 +159,12 @@ def go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_inc
 
 
 def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
-    if upper_laser_sequence[4] < 0.1 and upper_laser_sequence[0] < 0.1:
+    if upper_laser_sequence[4] < 0.2 and upper_laser_sequence[0] < 0.2:
         accelerate(-3., 0.04)
 
         print("UPPER HARD CASE STABILIZE")
 
-    elif lower_laser_sequence[4] < 0.1 and lower_laser_sequence[0] < 0.1:
+    elif lower_laser_sequence[4] < 0.2 and lower_laser_sequence[0] < 0.2:
         accelerate(-3., -0.04)
 
         print("LOWER HARD CASE STABILIZE")
@@ -183,12 +192,12 @@ def emergency_horizontal_decelerate(current_ranges):
 
 def stabilize_wrt_means(current_ranges):
     if upper_mean_greater(current_ranges):
-        accelerate(-3., 0.1)
+        accelerate(-3, 0.1)
 
         print("STABILIZE WRT UPPER MEAN")
 
     elif not upper_mean_greater(current_ranges):
-        accelerate(-3., -0.1)
+        accelerate(-3, -0.1)
 
         print("STABILIZE WRT LOWER MEAN")
 
