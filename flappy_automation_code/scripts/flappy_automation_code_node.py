@@ -117,7 +117,7 @@ def go_through_right_direction(current_ranges, angle_min, angle_increment, idx, 
 
     else:
         x = 0.05
-        y = math.sin(right_dir_angle)/2
+        y = math.sin(right_dir_angle)
 
     accelerate(x, y)
 
