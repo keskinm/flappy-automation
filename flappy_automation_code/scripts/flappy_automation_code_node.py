@@ -92,32 +92,39 @@ def automate(info_getter):
                 #     time.sleep(100000)
 
                 caution_decelerate(current_vel)
-                hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
-                emergency_horizontal_decelerate(current_ranges)
-                emergency_vertical_stabilize(current_ranges)
+                # hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
+                # emergency_horizontal_decelerate(current_ranges)
+                # emergency_vertical_stabilize(current_ranges)
                 go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time)
 
             idx += 1
 
 
 def go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time):
-    if upper_mean_greater(current_ranges):
-        biggest_laser_range_index = np.argmax(current_ranges[5:])+5
-    else:
-        biggest_laser_range_index = np.argmax(current_ranges[:4])
-
+    biggest_laser_range_index = np.argmax(current_ranges)
     right_dir_angle = angle_min + angle_increment*biggest_laser_range_index
-
-    upper_mean_angle = sum(angle_min + angle_increment*i for i in range(5, 9))/4
-    lower_mean_angle = sum(angle_min + angle_increment*i for i in range(4))/4
 
     print("GO THROUGH RIGHT DIRECTION")
 
-    x = math.cos(right_dir_angle)
-    y = math.sin(right_dir_angle)
+    if upper_mean_greater(current_ranges):
+        sum_x_acc = sum(math.cos((angle_min + angle_increment*(i+5)))*current_ranges[i+5] for i in range(4))/4
+        sum_y_acc = sum(math.sin((angle_min + angle_increment*(i+5)))*current_ranges[i+5] for i in range(4))/4
+    else:
+        sum_x_acc = sum(math.cos((angle_min + angle_increment*i))*current_ranges[i] for i in range(4))/4
+        sum_y_acc = sum(math.sin((angle_min + angle_increment*i))*current_ranges[i] for i in range(4))/4
+
+    sum_x_acc = sum(math.cos((angle_min + angle_increment*i))*current_ranges[i] for i in range(9))/9
+    sum_y_acc = sum(math.sin((angle_min + angle_increment * i)) * current_ranges[i] for i in range(9)) / 9
+
+    if random.random() <= 0.:
+        x = -0.1
+        y = sum_y_acc
+
+    else:
+        x = 0.05
+        y = math.sin(right_dir_angle)
 
     accelerate(x, y)
-    accelerate(-3., 0)
 
 
 def start_stuck_handler(x_vels_sequence, current_ranges):
@@ -133,29 +140,36 @@ def start_stuck_handler(x_vels_sequence, current_ranges):
 
 def caution_decelerate(current_vel):
     if current_vel.x >= 0.5:
-
-        # print("CAUTION DECELERATE")
-
         accelerate(-1., 0.)
+
+    if current_vel.y >= 0.3:
+        accelerate(0., -1.)
+        print("CAUTIOUS Y DECCELERATE")
+
+    if current_vel.y <= -0.3:
+        accelerate(0., 1.)
+        print("CAUTIOUS Y DECCELERATE")
 
 
 def go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time):
+    start = (sum(1 for i in range(9) if current_ranges[i] > 3.5) > 6)
+
     safety_conditions = len(set(forward_laser_sequence)) <= 2 and current_ranges[4] >= 0.3 and not (
                 (current_ranges[3] < 0.1 and current_ranges[2] < 0.1) or (
                     current_ranges[5] < 0.1 and current_ranges[6] < 0.1))
-    if safety_conditions:
+
+    if safety_conditions or start:
         print("SAFETY CONDITIONS")
         accelerate(0.3, 0.)
 
     else:
-        accelerate(-3., 0.)
-        if random.random() <= 1.:
-            non_legits_count = sum(1 for i in range(9) if current_ranges[i] > 3.5)
-            if non_legits_count < 10000:
-                go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time)
+        # accelerate(-1.5, 0.)
 
-        elif random.random() <= 1.:
-            stabilize_wrt_means(current_ranges)
+        if random.random() <= 0.7:
+            go_through_right_direction(current_ranges, angle_min, angle_increment, idx, current_time)
+
+        # else:
+        #     stabilize_wrt_means(current_ranges)
 
 
 def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
@@ -192,12 +206,12 @@ def emergency_horizontal_decelerate(current_ranges):
 
 def stabilize_wrt_means(current_ranges):
     if upper_mean_greater(current_ranges):
-        accelerate(-3, 0.1)
+        accelerate(-1.5, 0.1)
 
         print("STABILIZE WRT UPPER MEAN")
 
     elif not upper_mean_greater(current_ranges):
-        accelerate(-3, -0.1)
+        accelerate(-1.5, -0.1)
 
         print("STABILIZE WRT LOWER MEAN")
 
