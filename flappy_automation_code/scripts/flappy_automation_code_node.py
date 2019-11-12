@@ -94,7 +94,7 @@ def automate(info_getter):
                 caution_decelerate(current_vel)
                 # hard_case_stabilize(upper_laser_sequence, lower_laser_sequence)
                 # emergency_horizontal_decelerate(current_ranges)
-                # emergency_vertical_stabilize(current_ranges)
+                emergency_vertical_stabilize(current_ranges)
                 go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time)
 
             idx += 1
@@ -122,7 +122,7 @@ def go_through_right_direction(current_ranges, angle_min, angle_increment, idx, 
 
     else:
         x = 0.05
-        y = math.sin(right_dir_angle)
+        y = math.sin(right_dir_angle)/2
 
     accelerate(x, y)
 
@@ -142,11 +142,11 @@ def caution_decelerate(current_vel):
     if current_vel.x >= 0.5:
         accelerate(-1., 0.)
 
-    if current_vel.y >= 0.3:
+    if current_vel.y >= 0.2:
         accelerate(0., -1.)
         print("CAUTIOUS Y DECCELERATE")
 
-    if current_vel.y <= -0.3:
+    if current_vel.y <= -0.2:
         accelerate(0., 1.)
         print("CAUTIOUS Y DECCELERATE")
 
@@ -155,8 +155,8 @@ def go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_inc
     start = (sum(1 for i in range(9) if current_ranges[i] > 3.5) > 6)
 
     safety_conditions = len(set(forward_laser_sequence)) <= 2 and current_ranges[4] >= 0.3 and not (
-                (current_ranges[3] < 0.1 and current_ranges[2] < 0.1) or (
-                    current_ranges[5] < 0.1 and current_ranges[6] < 0.1))
+            (current_ranges[3] < 0.2 and current_ranges[2] < 0.2) or (
+            current_ranges[5] < 0.2 and current_ranges[6] < 0.2))
 
     if safety_conditions or start:
         print("SAFETY CONDITIONS")
@@ -185,17 +185,17 @@ def hard_case_stabilize(upper_laser_sequence, lower_laser_sequence):
 
 
 def emergency_vertical_stabilize(current_ranges):
-    if current_ranges[8] < 0.2 or current_ranges[7] < 0.2 or current_ranges[6] < 0.2:
+    if (current_ranges[8] < 0.4 and current_ranges[7] < 0.4 and current_ranges[6] < 0.4 and current_ranges[5] > 0.4) or (current_ranges[5] < 0.6 and current_ranges[4] > 1.):
 
         print("EMERGENCY UPPER CASE STABILIZE")
 
-        accelerate(-3., -0.3)
+        accelerate(-3., -0.7)
 
-    if current_ranges[0] < 0.2 or current_ranges[1] < 0.2 or current_ranges[2] < 0.2:
+    if (current_ranges[0] < 0.4 and current_ranges[1] < 0.4 and current_ranges[2] < 0.4 and current_ranges[3] > 0.4) or (current_ranges[3] < 0.6 and current_ranges[4] > 1.):
 
         print("EMERGENCY LOWER CASE STABILIZE")
 
-        accelerate(-3., 0.3)
+        accelerate(-3., 0.7)
 
 
 def emergency_horizontal_decelerate(current_ranges):
