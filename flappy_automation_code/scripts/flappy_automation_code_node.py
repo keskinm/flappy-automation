@@ -147,11 +147,6 @@ def caution_decelerate(current_vel):
 
 
 def go_forward(current_ranges, forward_laser_sequence, idx, angle_min, angle_increment, current_time):
-    start = (sum(1 for i in range(9) if current_ranges[i] > 3.5) > 6)
-
-    if start:
-        accelerate(0.3, 0.)
-
     safety_conditions = (current_ranges[4] > 2 and current_ranges[3] > 2 and current_ranges[5] > 2)
 
     if safety_conditions:
